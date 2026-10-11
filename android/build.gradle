@@ -3,6 +3,10 @@ ext.android_ndk_version = '29.0.14206865'
 buildscript {
     ext.kotlin_version = '2.3.21'
     repositories {
+        // CN mirrors first.
+        maven { url "https://maven.aliyun.com/repository/public" }
+        maven { url "https://maven.aliyun.com/repository/google" }
+        maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
         google()
         mavenCentral()
         maven { url "https://jitpack.io" }
@@ -16,6 +20,9 @@ buildscript {
 
 allprojects {
     repositories {
+        // CN mirrors first.
+        maven { url "https://maven.aliyun.com/repository/public" }
+        maven { url "https://maven.aliyun.com/repository/google" }
         google()
         mavenCentral()
         maven { url "https://jitpack.io" }
