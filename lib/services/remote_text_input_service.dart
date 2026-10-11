@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
@@ -341,6 +342,26 @@ class RemoteTextInputService {
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
     return Uri.parse('$normalized/api/remote/input/${session.key}');
+  }
+
+  /// Address chosen for the remote-input QR, remembered across sessions.
+  static const String preferredBaseUrlPreferenceKey =
+      'remote_text_input_preferred_base_url';
+
+  Future<String?> getPreferredBaseUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getString(preferredBaseUrlPreferenceKey)?.trim();
+    return (value == null || value.isEmpty) ? null : value;
+  }
+
+  Future<void> setPreferredBaseUrl(String baseUrl) async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = baseUrl.trim();
+    if (value.isEmpty) {
+      await prefs.remove(preferredBaseUrlPreferenceKey);
+      return;
+    }
+    await prefs.setString(preferredBaseUrlPreferenceKey, value);
   }
 
   void clearForTesting() {

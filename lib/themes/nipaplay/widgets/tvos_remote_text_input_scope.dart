@@ -12,6 +12,7 @@ import 'package:nipaplay/themes/nipaplay/widgets/large_screen_input_controls.dar
 import 'package:nipaplay/themes/nipaplay/widgets/large_screen_view_container.dart';
 import 'package:nipaplay/themes/nipaplay/widgets/remote_text_input_qr_view.dart';
 import 'package:nipaplay/utils/globals.dart' as globals;
+import 'package:nipaplay/utils/remote_access_address_options.dart';
 
 typedef TvOSRemoteInputRequestHandler = Future<void> Function(
   BuildContext context,
@@ -475,16 +476,16 @@ class _TvOSRemoteTextInputScopeState extends State<TvOSRemoteTextInputScope> {
       }
     }
     final accessUrls = await server.getAccessUrls();
-    String? baseUrl;
-    for (final url in accessUrls) {
-      if (!_isLoopbackUrl(url)) {
-        baseUrl = url;
-        break;
-      }
-    }
-    if (baseUrl == null) {
+    final addressOptions = buildRemoteInputAddressOptions(accessUrls);
+    if (addressOptions.isEmpty) {
       throw StateError('没有可供手机访问的局域网地址');
     }
+    final preferredBaseUrl =
+        await RemoteTextInputService.instance.getPreferredBaseUrl();
+    final baseUrl = resolveInitialRemoteInputAddress(
+      options: addressOptions,
+      preferred: preferredBaseUrl,
+    )!;
 
     final session = RemoteTextInputService.instance.createGroupSession(
       title: target.title,
@@ -544,6 +545,20 @@ class _TvOSRemoteTextInputScopeState extends State<TvOSRemoteTextInputScope> {
             inputUri: inputUri,
             displayKey: session.displayKey,
             fieldCount: target.fields.length,
+            addressOptions: addressOptions,
+            initialBaseUrl: baseUrl,
+            uriBuilder: (selectedBaseUrl) =>
+                RemoteTextInputService.instance.buildInputUri(
+              selectedBaseUrl,
+              session,
+            ),
+            onAddressSelected: (selectedBaseUrl) {
+              unawaited(
+                RemoteTextInputService.instance.setPreferredBaseUrl(
+                  selectedBaseUrl,
+                ),
+              );
+            },
           );
         },
       );
@@ -556,15 +571,6 @@ class _TvOSRemoteTextInputScopeState extends State<TvOSRemoteTextInputScope> {
     if (result != null) {
       applyTvOSRemoteTextInputValues(target, result);
     }
-  }
-
-  bool _isLoopbackUrl(String value) {
-    final host = Uri.tryParse(value)?.host.toLowerCase();
-    return host == null ||
-        host.isEmpty ||
-        host == 'localhost' ||
-        host == '127.0.0.1' ||
-        host == '::1';
   }
 
   @override
